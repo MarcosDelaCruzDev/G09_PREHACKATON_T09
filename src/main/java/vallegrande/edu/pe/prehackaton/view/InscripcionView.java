@@ -14,14 +14,17 @@ import vallegrande.edu.pe.prehackaton.controller.InscripcionController;
 import vallegrande.edu.pe.prehackaton.model.Inscripcion;
 import vallegrande.edu.pe.prehackaton.model.InscripcionDao;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 public class InscripcionView {
     private TableView<Inscripcion> tablaInscripciones;
-    private InscripcionController InscripcionController;
+    private InscripcionController inscripcionController;
     private InscripcionDao inscripcionDao;
 
     public VBox crearVistaInscripciones() {
-        InscripcionController = new InscripcionController();
-        inscripcionDao =  new InscripcionDao();
+        inscripcionController = new InscripcionController();
+        inscripcionDao = new InscripcionDao();
 
         tablaInscripciones = new TableView<>();
 
@@ -65,7 +68,7 @@ public class InscripcionView {
                 inscripcionDao.eliminarInscripcion(inscripcionSeleccionado.getId_inscripcion());
                 actualizarTabla();
             } else {
-                System.out.println("Seleccione un evento de la tabla para eliminar.");
+                System.out.println("Seleccione una inscripcion de la tabla para eliminar.");
             }
         });
 
@@ -80,8 +83,21 @@ public class InscripcionView {
     }
 
     private void actualizarTabla() {
-        ObservableList<Inscripcion> datos = FXCollections.observableArrayList(InscripcionController.obtenerInscripcion());
+        ObservableList<Inscripcion> datos = FXCollections.observableArrayList(inscripcionController.obtenerInscripcion());
         tablaInscripciones.setItems(datos);
+    }
+
+    private void mostrarAdvertencia(String mensaje) {
+        new Alert(Alert.AlertType.WARNING, mensaje).showAndWait();
+    }
+
+    private boolean fechaValida(String fecha) {
+        try {
+            LocalDate.parse(fecha); // formato YYYY-MM-DD
+            return true;
+        } catch (DateTimeParseException ex) {
+            return false;
+        }
     }
 
     private void abrirFormulario(Inscripcion inscripcionExistente) {
@@ -119,29 +135,58 @@ public class InscripcionView {
         grid.add(btnGuardar, 1, 4);
 
         btnGuardar.setOnAction(e -> {
+            String fecha = txtFecha_inscripcion.getText().trim();
+            String estado = txtEstado.getText().trim();
+
+            int idEvento;
+            int idParticipante;
             try {
-                if (inscripcionExistente == null) {
-                    Inscripcion nuevo = new Inscripcion();
-                    nuevo.setId_eventos(Integer.parseInt(txtIdEvento.getText()));
-                    nuevo.setId_participante(Integer.parseInt(txtIdParticipante.getText()));
-                    nuevo.setFecha_inscripcion(txtFecha_inscripcion.getText());
-                    nuevo.setEstado(txtEstado.getText());
-
-                    inscripcionDao.registrarInscripcion(nuevo);
-                } else {
-                    inscripcionExistente.setId_eventos(Integer.parseInt(txtIdEvento.getText()));
-                    inscripcionExistente.setId_participante(Integer.parseInt(txtIdParticipante.getText()));
-                    inscripcionExistente.setFecha_inscripcion(txtFecha_inscripcion.getText());
-                    inscripcionExistente.setEstado(txtEstado.getText());
-
-                    inscripcionDao.actualizarInscripcion(inscripcionExistente);
-                }
-
-                actualizarTabla();
-                ventana.close();
+                idEvento = Integer.parseInt(txtIdEvento.getText().trim());
+                idParticipante = Integer.parseInt(txtIdParticipante.getText().trim());
             } catch (NumberFormatException ex) {
-                System.out.println("Error: ID Evento e ID Participante deben ser números enteros.");
+                mostrarAdvertencia("ID Evento e ID Participante deben ser números enteros.");
+                return;
             }
+
+            if (idEvento <= 0 || idParticipante <= 0) {
+                mostrarAdvertencia("Los IDs deben ser mayores que cero.");
+                return;
+            }
+            if (!fechaValida(fecha)) {
+                mostrarAdvertencia("La fecha debe tener el formato AAAA-MM-DD (ejemplo: 2026-11-20).");
+                return;
+            }
+            if (estado.isEmpty()) {
+                mostrarAdvertencia("El estado es obligatorio.");
+                return;
+            }
+
+            // Evitar duplicados: mismo participante en el mismo evento
+            int idActual = (inscripcionExistente == null) ? 0 : inscripcionExistente.getId_inscripcion();
+            if (inscripcionDao.existeInscripcion(idEvento, idParticipante, idActual)) {
+                mostrarAdvertencia("Este participante ya está inscrito en ese evento.");
+                return;
+            }
+
+            if (inscripcionExistente == null) {
+                Inscripcion nuevo = new Inscripcion();
+                nuevo.setId_eventos(idEvento);
+                nuevo.setId_participante(idParticipante);
+                nuevo.setFecha_inscripcion(fecha);
+                nuevo.setEstado(estado);
+
+                inscripcionDao.registrarInscripcion(nuevo);
+            } else {
+                inscripcionExistente.setId_eventos(idEvento);
+                inscripcionExistente.setId_participante(idParticipante);
+                inscripcionExistente.setFecha_inscripcion(fecha);
+                inscripcionExistente.setEstado(estado);
+
+                inscripcionDao.actualizarInscripcion(inscripcionExistente);
+            }
+
+            actualizarTabla();
+            ventana.close();
         });
 
         javafx.scene.Scene escena = new javafx.scene.Scene(grid, 350, 300);

@@ -14,6 +14,9 @@ import vallegrande.edu.pe.prehackaton.controller.EventoController;
 import vallegrande.edu.pe.prehackaton.model.Evento;
 import vallegrande.edu.pe.prehackaton.model.EventoDao;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 public class EventoView {
 
     private TableView<Evento> tablaEventos;
@@ -91,6 +94,19 @@ public class EventoView {
         tablaEventos.setItems(datos);
     }
 
+    private void mostrarAdvertencia(String mensaje) {
+        new Alert(Alert.AlertType.WARNING, mensaje).showAndWait();
+    }
+
+    private boolean fechaValida(String fecha) {
+        try {
+            LocalDate.parse(fecha); // formato YYYY-MM-DD
+            return true;
+        } catch (DateTimeParseException ex) {
+            return false;
+        }
+    }
+
     private void abrirFormulario(Evento eventoExistente) {
         Stage ventana = new Stage();
         ventana.initModality(Modality.APPLICATION_MODAL);
@@ -134,23 +150,46 @@ public class EventoView {
         grid.add(btnGuardar, 1, 6);
 
         btnGuardar.setOnAction(e -> {
+            String nombre = txtNombre.getText().trim();
+            String descripcion = txtDescripcion.getText().trim();
+            String fecha = txtFecha.getText().trim();
+            String lugar = txtLugar.getText().trim();
+            String modalidad = txtModalidad.getText().trim();
+            String estado = txtEstado.getText().trim();
+
+            if (nombre.isEmpty() || lugar.isEmpty() || modalidad.isEmpty() || estado.isEmpty()) {
+                mostrarAdvertencia("Nombre, lugar, modalidad y estado son obligatorios.");
+                return;
+            }
+            if (!fechaValida(fecha)) {
+                mostrarAdvertencia("La fecha debe tener el formato AAAA-MM-DD (ejemplo: 2026-11-20).");
+                return;
+            }
+
+            // Evitar duplicados: mismo nombre en la misma fecha
+            int idActual = (eventoExistente == null) ? 0 : eventoExistente.getId_eventos();
+            if (eventoDao.existeEvento(nombre, fecha, idActual)) {
+                mostrarAdvertencia("Ya existe un evento con ese nombre en esa fecha.");
+                return;
+            }
+
             if (eventoExistente == null) {
                 Evento nuevo = new Evento();
-                nuevo.setNombre(txtNombre.getText());
-                nuevo.setDescripcion(txtDescripcion.getText());
-                nuevo.setFecha(txtFecha.getText());
-                nuevo.setLugar(txtLugar.getText());
-                nuevo.setModalidad(txtModalidad.getText());
-                nuevo.setEstado(txtEstado.getText());
+                nuevo.setNombre(nombre);
+                nuevo.setDescripcion(descripcion);
+                nuevo.setFecha(fecha);
+                nuevo.setLugar(lugar);
+                nuevo.setModalidad(modalidad);
+                nuevo.setEstado(estado);
 
                 eventoDao.registrarEvento(nuevo);
             } else {
-                eventoExistente.setNombre(txtNombre.getText());
-                eventoExistente.setDescripcion(txtDescripcion.getText());
-                eventoExistente.setFecha(txtFecha.getText());
-                eventoExistente.setLugar(txtLugar.getText());
-                eventoExistente.setModalidad(txtModalidad.getText());
-                eventoExistente.setEstado(txtEstado.getText());
+                eventoExistente.setNombre(nombre);
+                eventoExistente.setDescripcion(descripcion);
+                eventoExistente.setFecha(fecha);
+                eventoExistente.setLugar(lugar);
+                eventoExistente.setModalidad(modalidad);
+                eventoExistente.setEstado(estado);
 
                 eventoDao.actualizarEvento(eventoExistente);
             }

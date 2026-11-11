@@ -27,7 +27,7 @@ public class EventoDao {
                 evento.setModalidad(rs.getString("modalidad"));
                 evento.setEstado(rs.getString("estado"));
 
-                lista.add(evento); // Añadimos cada evento a la lista
+                lista.add(evento);
             }
         } catch (SQLException e) {
             System.out.println("Error al listar eventos: " + e.getMessage());
@@ -80,6 +80,25 @@ public class EventoDao {
             System.out.println("Evento eliminado con éxito.");
         } catch (SQLException e) {
             System.out.println("Error al eliminar evento: " + e.getMessage());
+        }
+    }
+
+    // Indica si ya existe un evento con el mismo nombre en la misma fecha.
+    // idExcluir: id del evento que se está editando (usar 0 al registrar uno nuevo),
+    // para que al editar no se compare contra sí mismo.
+    public boolean existeEvento(String nombre, String fecha, int idExcluir) {
+        String sql = "SELECT COUNT(*) FROM Eventos WHERE nombre = ? AND fecha = ? AND id_eventos <> ?";
+        try (Connection con = Conexion.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, nombre);
+            ps.setString(2, fecha);
+            ps.setInt(3, idExcluir);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al verificar evento duplicado: " + e.getMessage());
+            return false;
         }
     }
 
