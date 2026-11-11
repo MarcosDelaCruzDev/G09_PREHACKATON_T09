@@ -42,7 +42,10 @@ public class ParticipanteView {
         TableColumn<Participante, String> colTelefono = new TableColumn<>("Teléfono");
         colTelefono.setCellValueFactory(new PropertyValueFactory<>("telefono"));
 
-        tablaParticipantes.getColumns().addAll(colId, colNombre, colApellidos, colDni, colCorreo, colTelefono);
+        TableColumn<Participante, String> colInstitucion = new TableColumn<>("Institución");
+        colInstitucion.setCellValueFactory(new PropertyValueFactory<>("institucion"));
+
+        tablaParticipantes.getColumns().addAll(colId, colNombre, colApellidos, colDni, colCorreo, colTelefono, colInstitucion);
 
         actualizarTabla();
 
@@ -86,6 +89,15 @@ public class ParticipanteView {
         tablaParticipantes.setItems(datos);
     }
 
+    // Devuelve un mensaje de error, o null si los datos son válidos
+    private String validar(String nombres, String apellidos, String dni, String correo, String telefono) {
+        if (nombres.isEmpty() || apellidos.isEmpty()) return "Nombres y apellidos son obligatorios.";
+        if (!dni.matches("\\d{8}")) return "El DNI debe tener exactamente 8 dígitos.";
+        if (!correo.matches("^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$")) return "El correo no es válido.";
+        if (!telefono.matches("\\d{9}")) return "El teléfono debe tener 9 dígitos.";
+        return null;
+    }
+
     // Ventana emergente (Formulario) para Registrar o Editar Participante
     private void abrirFormulario(Participante participanteExistente) {
         Stage ventana = new Stage();
@@ -102,6 +114,7 @@ public class ParticipanteView {
         TextField txtDni = new TextField();
         TextField txtCorreo = new TextField();
         TextField txtTelefono = new TextField();
+        TextField txtInstitucion = new TextField();
 
         if (participanteExistente != null) {
             txtNombres.setText(participanteExistente.getNombres());
@@ -109,6 +122,7 @@ public class ParticipanteView {
             txtDni.setText(participanteExistente.getDni());
             txtCorreo.setText(participanteExistente.getCorreo());
             txtTelefono.setText(participanteExistente.getTelefono());
+            txtInstitucion.setText(participanteExistente.getInstitucion());
         }
 
         grid.add(new Label("Nombres:"), 0, 0);
@@ -121,28 +135,39 @@ public class ParticipanteView {
         grid.add(txtCorreo, 1, 3);
         grid.add(new Label("Teléfono:"), 0, 4);
         grid.add(txtTelefono, 1, 4);
+        grid.add(new Label("Institución:"), 0, 5);
+        grid.add(txtInstitucion, 1, 5);
 
         Button btnGuardar = new Button("Guardar");
-        grid.add(btnGuardar, 1, 5);
+        grid.add(btnGuardar, 1, 6);
 
         btnGuardar.setOnAction(e -> {
+            String error = validar(txtNombres.getText().trim(), txtApellidos.getText().trim(),
+                    txtDni.getText().trim(), txtCorreo.getText().trim(), txtTelefono.getText().trim());
+            if (error != null) {
+                new Alert(Alert.AlertType.WARNING, error).showAndWait();
+                return; // keep the form open so the user can fix the data
+            }
+
             if (participanteExistente == null) {
                 // Registrar nuevo
                 Participante nuevo = new Participante();
-                nuevo.setNombres(txtNombres.getText());
-                nuevo.setApellidos(txtApellidos.getText());
-                nuevo.setDni(txtDni.getText());
-                nuevo.setCorreo(txtCorreo.getText());
-                nuevo.setTelefono(txtTelefono.getText());
+                nuevo.setNombres(txtNombres.getText().trim());
+                nuevo.setApellidos(txtApellidos.getText().trim());
+                nuevo.setDni(txtDni.getText().trim());
+                nuevo.setCorreo(txtCorreo.getText().trim());
+                nuevo.setTelefono(txtTelefono.getText().trim());
+                nuevo.setInstitucion(txtInstitucion.getText().trim());
 
                 participanteDao.registrarParticipante(nuevo);
             } else {
                 // Actualizar existente
-                participanteExistente.setNombres(txtNombres.getText());
-                participanteExistente.setApellidos(txtApellidos.getText());
-                participanteExistente.setDni(txtDni.getText());
-                participanteExistente.setCorreo(txtCorreo.getText());
-                participanteExistente.setTelefono(txtTelefono.getText());
+                participanteExistente.setNombres(txtNombres.getText().trim());
+                participanteExistente.setApellidos(txtApellidos.getText().trim());
+                participanteExistente.setDni(txtDni.getText().trim());
+                participanteExistente.setCorreo(txtCorreo.getText().trim());
+                participanteExistente.setTelefono(txtTelefono.getText().trim());
+                participanteExistente.setInstitucion(txtInstitucion.getText().trim());
 
                 participanteDao.actualizarParticipante(participanteExistente);
             }
@@ -151,7 +176,7 @@ public class ParticipanteView {
             ventana.close();
         });
 
-        javafx.scene.Scene escena = new javafx.scene.Scene(grid, 350, 280);
+        javafx.scene.Scene escena = new javafx.scene.Scene(grid, 350, 320);
         ventana.setScene(escena);
         ventana.showAndWait();
     }

@@ -34,6 +34,7 @@ public class ParticipanteDao {
 
         return lista;
     }
+
     public void registrarParticipante(Participante participante) {
         String sql = "INSERT INTO Participantes (nombres, apellidos, dni, correo, telefono, institucion) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection con = Conexion.conectar();
@@ -52,7 +53,7 @@ public class ParticipanteDao {
     }
 
     public void actualizarParticipante(Participante participante) {
-        String sql = "UPDATE Participantes SET nombre = ?, descripcion = ?, fecha = ?, lugar = ?, modalidad = ?, estado = ? WHERE id_eventos = ?";
+        String sql = "UPDATE Participantes SET nombres = ?, apellidos = ?, dni = ?, correo = ?, telefono = ?, institucion = ? WHERE id_participante = ?";
         try (Connection con = Conexion.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, participante.getNombres());
@@ -61,6 +62,7 @@ public class ParticipanteDao {
             ps.setString(4, participante.getCorreo());
             ps.setString(5, participante.getTelefono());
             ps.setString(6, participante.getInstitucion());
+            ps.setInt(7, participante.getId_participante());
             ps.executeUpdate();
             System.out.println("Participante actualizado con éxito.");
         } catch (SQLException e) {
@@ -69,7 +71,7 @@ public class ParticipanteDao {
     }
 
     public void eliminarParticipante(int idParticipante) {
-        String sql = "DELETE FROM Participantes WHERE id_Participante = ?";
+        String sql = "DELETE FROM Participantes WHERE id_participante = ?";
         try (Connection con = Conexion.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idParticipante);
